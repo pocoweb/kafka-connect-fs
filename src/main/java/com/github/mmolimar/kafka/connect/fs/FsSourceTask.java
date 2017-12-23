@@ -8,6 +8,7 @@ import com.github.mmolimar.kafka.connect.fs.util.ReflectionUtils;
 import com.github.mmolimar.kafka.connect.fs.util.Version;
 import org.apache.kafka.common.config.ConfigException;
 import org.apache.kafka.connect.data.Struct;
+import org.apache.kafka.connect.data.Schema;
 import org.apache.kafka.connect.errors.ConnectException;
 import org.apache.kafka.connect.source.SourceRecord;
 import org.apache.kafka.connect.source.SourceTask;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.Base64;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -104,6 +106,24 @@ public class FsSourceTask extends SourceTask {
     }
 
     private SourceRecord convert(FileMetadata metadata, Offset offset, Struct struct) {
+        String fieldName = struct.schema().fields().get(0).name();
+
+        if (fieldName.equals("bytearray_b64")) {
+            String bString = struct.get(fieldName).toString().replace("\"", "");
+            return new SourceRecord(
+                    new HashMap<String, Object>() {
+                        {
+                            put("path", metadata.getPath());
+                            //TODO manage blocks
+                            //put("blocks", metadata.getBlocks().toString());
+                        }
+                    },
+                    Collections.singletonMap("offset", offset.getRecordOffset()),
+                    config.getTopic(),
+                    Schema.BYTES_SCHEMA,
+                    Base64.getDecoder().decode(bString)
+            );
+        }
         return new SourceRecord(
                 new HashMap<String, Object>() {
                     {
