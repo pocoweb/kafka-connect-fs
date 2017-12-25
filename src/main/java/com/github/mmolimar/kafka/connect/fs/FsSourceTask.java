@@ -77,6 +77,7 @@ public class FsSourceTask extends SourceTask {
                     while (reader.hasNext()) {
                         results.add(convert(metadata, reader.currentOffset(), reader.next()));
                     }
+                    reader.close();
                 } catch (ConnectException | IOException e) {
                     //when an exception happens reading a file, the connector continues
                     log.error("Error reading file from FS: " + metadata.getPath() + ". Keep going...", e);
